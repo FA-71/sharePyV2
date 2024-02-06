@@ -8,12 +8,20 @@ BROADCAST_PORT = 42068
 class Server: 
     def __init__ (self): 
         try: 
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                    s.connect(('8.8.8.8', 53))
+                    local_ip = s.getsockname()[0]
+            self.server_ip = local_ip
+
+        except socket.error as se:
+            print("Socket error occurred:", se)
+
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s: 
-                print("staring ")
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 s.connect(('192.255.255.252', 1))    
                 self.server_ip = s.getsockname()[0]
                 print("ip: ",self.server_ip)
+
         except Exception as e: 
             print("failed", e)
             return 
@@ -22,7 +30,7 @@ class Server:
     def start_server(self):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as server: 
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            server.bind((socket.gethostbyname(socket.gethostname()), BROADCAST_PORT))
+            server.bind(('0.0.0.0', BROADCAST_PORT))
 
             print("Server started. Waiting for devices...")
 
