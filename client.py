@@ -18,7 +18,8 @@ class Client:
                 s.sendto("this is test".encode(), broadcast_addr)
     
     def start_identifier(self): 
-        # open this only for some time 
+        # TODO: open this only for some time 
+        # TODO: handle more than one connection(selection or asyncio)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.bind((self.client_ip, COMMON_PORT))
