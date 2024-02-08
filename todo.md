@@ -1,5 +1,7 @@
 make a unique key and save to a file
 
+# check if network is turned off
+
 1. send the public key
 2. client send the public key and the peerdevice details with encryption
 3. server decrypt and see if it is already paired (with the key or id )
