@@ -5,11 +5,22 @@ import logging
 from server import Server
 from client import Client
 from constants import *
+from keys import Keys
+from utils import check_network
+
 
 logging.basicConfig(level=logging.DEBUG)
 
 def main():
-    server = Server()
+    network_status = check_network()
+    if not network_status:
+        print("not connected to a network")
+        exit()
+
+    # generate key pair
+    key_pair = Keys()
+
+    server = Server(key_pair)
     broadcast_listener_thread = threading.Thread(target=server.start_broadcast_listener)
     broadcast_listener_thread.start()
 

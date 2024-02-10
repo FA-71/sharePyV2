@@ -4,13 +4,15 @@ import threading
 import logging
 
 from message import BroadcastMessage
+from config import DEVICE_IP
 from constants import *
+from keys import Keys
 
 
 class Server: 
-    def __init__ (self): 
+    def __init__ (self, key_pair: Keys): 
         self.client_ip_list = set()
-        return
+        self.key_pair = key_pair
     
     def start_broadcast_listener(self):
         """
@@ -24,25 +26,30 @@ class Server:
 
             while True:
                 data, addr = server.recvfrom(1024)
-                logging.debug(f"server: {addr} - {data}")
-                logging.debug(BroadcastMessage.check_message(data))
 
-                # TODO: check if peerdevice is connected 
-                if BroadcastMessage.check_message(data) and addr[0] not in self.client_ip_list:
-                    self._add_to_client_ip_list(addr[0])
-                    logging.debug(f"server: new client ip {addr}")
-                    logging.debug(f"server: start connecting {addr}")
-                    threading.Thread(target=self._make_connection, args=[addr[0],]).start()
+                if addr[0] != DEVICE_IP:
+                    logging.debug(f"server: {addr} - {data}")
+                    logging.debug(BroadcastMessage.check_message(data))
 
-    def _make_connection(self, ip): 
+                    # TODO: check if peerdevice is connected 
+                    if BroadcastMessage.check_message(data) and addr[0] not in self.client_ip_list:
+                        self._add_to_client_ip_list(addr[0])
+                        logging.debug(f"server: start connecting {addr}")
+                        threading.Thread(target=self._make_new_connection, args=[addr[0],]).start()
+
+    def _make_new_connection(self, ip): 
+        """
+        make a connection with device to share device details
+        """
         logging.debug(f"making connection {ip}:{COMMON_PORT} ")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket: 
             client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             client_socket.connect((ip, COMMON_PORT))
-            client_socket.sendall("this is test".encode())
+            client_socket.sendall(self.key_pair.serialize_public_key())
             print("done")
             # TODO: send the msg with public key 
-    
+        self._remove_addr_after_delay(ip) 
+
     def _add_to_client_ip_list(self, ip): 
         """
         add to new client ip to the client_ip_list and set 10s time to remove from the list
