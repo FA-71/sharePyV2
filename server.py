@@ -24,6 +24,8 @@ class Server:
 
             while True:
                 data, addr = server.recvfrom(1024)
+                logging.debug(f"server: {addr} - {data}")
+                logging.debug(BroadcastMessage.check_message(data))
 
                 # TODO: check if peerdevice is connected 
                 if BroadcastMessage.check_message(data) and addr not in self.client_ip_list:

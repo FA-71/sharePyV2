@@ -24,9 +24,11 @@ class Client:
             broadcast_addr = ('<broadcast>', BROADCAST_PORT)
 
             logging.debug(f"client: broadcasting")
-            for i in range(5): 
-                s.sendto(BroadcastMessage.pack_message(), broadcast_addr)
-                time.sleep(2)
+            while True: 
+                if (input("send ping: ") == "y"):
+                    for i in range(5): 
+                        s.sendto(BroadcastMessage.pack_message(), broadcast_addr)
+                        time.sleep(2)
     
     def start_identifier(self): 
         # TODO: open this only for some time 

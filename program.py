@@ -17,9 +17,8 @@ def main():
     device_identifier_thread = threading.Thread(target=client.start_identifier)
     device_identifier_thread.start()
 
-    if (input("enter y: ") == "y"): 
-        client_thread = threading.Thread(target=client.broadcast_self)
-        client_thread.start()
+    client_thread = threading.Thread(target=client.broadcast_self)
+    client_thread.start()
 
     broadcast_listener_thread.join()
     client_thread.join()
