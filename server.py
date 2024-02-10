@@ -28,17 +28,19 @@ class Server:
                 logging.debug(BroadcastMessage.check_message(data))
 
                 # TODO: check if peerdevice is connected 
-                if BroadcastMessage.check_message(data) and addr not in self.client_ip_list:
-                    self.__add_to_client_ip_list(addr[0])
+                if BroadcastMessage.check_message(data) and addr[0] not in self.client_ip_list:
+                    self._add_to_client_ip_list(addr[0])
                     logging.debug(f"server: new client ip {addr}")
                     logging.debug(f"server: start connecting {addr}")
-                    threading.Thread(target=self._make_connection(addr[0])).start()
+                    threading.Thread(target=self._make_connection, args=[addr[0],]).start()
 
     def _make_connection(self, ip): 
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as client_socket: 
+        logging.debug(f"making connection {ip}:{COMMON_PORT} ")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket: 
             client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             client_socket.connect((ip, COMMON_PORT))
-            client_socket.sendall("this is test")
+            client_socket.sendall("this is test".encode())
+            print("done")
             # TODO: send the msg with public key 
     
     def _add_to_client_ip_list(self, ip): 

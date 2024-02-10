@@ -34,7 +34,7 @@ class Client:
         # TODO: open this only for some time 
         # TODO: handle more than one connection(selection)
         # TODO: make this a secure connection with ssl
-        logging.debug("device identifier started")
+        logging.debug("client: device identifier started")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             client_socket.bind((self.client_ip, COMMON_PORT))
@@ -42,22 +42,19 @@ class Client:
             client_socket.setblocking(False)
             self._client_socket = client_socket
 
-            sel = selectors.DefaultSelector()
-            sel.register(client_socket, selectors.EVENT_READ, data=None)
-            self._sel = sel
+            self._sel = selectors.DefaultSelector()
+            self._sel.register(client_socket, selectors.EVENT_READ, data=self._accept_server)
 
             while True: 
-                events = sel.select(timeout=None)
+                events = self._sel.select()
+                print(events)
                 for key, mask in events: 
-                    if key.data is None: 
-                        self._accept_server()
-                    else: 
-                        callback = key.data
-                        callback(key.fileobj) 
+                    callback = key.data
+                    callback(key.fileobj) 
 
 
-    def _accept_server(self):
-            server_socket, addr = self.client_sock.accept()
+    def _accept_server(self, sock):
+            server_socket, addr = sock.accept()
             logging.debug(f"client: made a connection with {addr}")
             server_socket.setblocking(False)
             self._sel.register(server_socket, selectors.EVENT_READ, data=self._handle_server)

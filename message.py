@@ -13,6 +13,6 @@ class BroadcastMessage:
     
     @classmethod
     def check_message(cls, message): 
-        return unpack(f"!{len(cls.identifier)}s", message) == cls.identifier 
+        return unpack(f"!{len(cls.identifier)}s", message)[0].decode() == cls.identifier 
 
 
