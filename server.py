@@ -34,7 +34,6 @@ class Server:
     def _handle_broadcast_messages(self, addr, data):
         if addr[0] != DEVICE_IP:
             logging.debug(f"server: {addr} - {data}")
-            logging.debug(BroadcastMessage.check_message(data))
 
             # TODO: check if peerdevice is connected 
             if BroadcastMessage.check_message(data) and addr[0] not in self.peerManager.peer_ip_set:

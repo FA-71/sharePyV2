@@ -13,7 +13,16 @@ from message import PublicKeyMessage
 
 
 class PeerDeviceManager:
+    def __init__(self, key_pair: Keys):
+        self.key_pair = key_pair
+        self.peer_ip_set: Set[str] = set()
+        self.peers: Set[PeerDevice] = set()
+        self._sel: selectors.DefaultSelector | None = None
+
     def peer_manager_listener(self):
+        """
+        start the peer listener and register to the selector 
+        """
         logging.debug("peerDeviceManager: listener started")
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -22,6 +31,7 @@ class PeerDeviceManager:
             client_socket.listen(5)
             client_socket.setblocking(False)
 
+            logging.debug(f"peerDeviceManager: listening on {DEVICE_IP}:{COMMON_PORT}")
             self._sel = selectors.DefaultSelector()
             self._sel.register(client_socket, selectors.EVENT_READ, data=self._accept_new_connection)
 
@@ -30,12 +40,6 @@ class PeerDeviceManager:
                 for key, mask in events: 
                     callback = key.data
                     callback(key.fileobj) 
-
-    def __init__(self, key_pair: Keys):
-        self.key_pair = key_pair
-        self.peer_ip_set: Set[str] = set()
-        self.peers: Set[PeerDevice] = set()
-        self._sel: selectors.DefaultSelector | None = None
 
     def handle_new_peer_ip(self, ip):
         self.peer_ip_set.add(ip)
@@ -50,6 +54,8 @@ class PeerDeviceManager:
         client_socket =  socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
         client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         client_socket.connect((ip, COMMON_PORT))
+
+        # make new PeerDevice
         peer_device = PeerDevice(ip, self.key_pair, client_socket)
         peer_device.send_key()
         self.peers.add(peer_device)
@@ -72,10 +78,12 @@ class PeerDeviceManager:
 
     def _accept_new_connection(self, sock: socket.socket):
         """
-        accept socket from the peer
+        accept socket from the peer  and make new PeerDevice
         """ 
         peer_sock, addr = sock.accept()
         peer_sock.setblocking(False)
+
+        # make a new PeerDevice
         peer_device = PeerDevice(ip = addr[0], key_pair=self.key_pair, peer_socket=peer_sock)
         self.peers.add(peer_device)
 
