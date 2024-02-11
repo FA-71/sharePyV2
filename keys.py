@@ -2,6 +2,7 @@ from pathlib import Path
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes
@@ -90,5 +91,15 @@ class Keys:
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
 
-    def deserialize_public_key(self, public_key_bytes):
-        return serialization.load_der_public_key(public_key_bytes, backend=default_backend())
+    @staticmethod
+    def deserialize_public_key(public_key_bytes):
+        return serialization.load_pem_public_key(public_key_bytes, backend=default_backend())
+
+    @staticmethod
+    def get_derived_key(key):
+        return HKDF(
+            algorithm=hashes.SHA256(),
+            length=32, 
+            salt=None,
+            info=b"handshake data"
+        ).derive(key)

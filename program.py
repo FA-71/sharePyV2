@@ -7,6 +7,7 @@ from client import Client
 from constants import *
 from keys import Keys
 from utils import check_network
+from peerDeviceManager import PeerDeviceManager
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -20,13 +21,16 @@ def main():
     # generate key pair
     key_pair = Keys()
 
-    server = Server(key_pair)
+    # peer manager
+    peer_device_manager = PeerDeviceManager(key_pair) 
+    peer_manager_listener = threading.Thread(target=peer_device_manager.peer_manager_listener)
+    peer_manager_listener.start()
+
+    server = Server(key_pair, peer_device_manager)
     broadcast_listener_thread = threading.Thread(target=server.start_broadcast_listener)
     broadcast_listener_thread.start()
 
     client = Client() 
-    device_identifier_thread = threading.Thread(target=client.start_identifier)
-    device_identifier_thread.start()
 
     client_thread = threading.Thread(target=client.broadcast_self)
     client_thread.start()
