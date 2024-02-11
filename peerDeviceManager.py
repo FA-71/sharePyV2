@@ -59,6 +59,7 @@ class PeerDeviceManager:
         peer_device = PeerDevice(ip, self.key_pair, client_socket)
         peer_device.send_key()
         self.peers.add(peer_device)
+        self._sel.register(client_socket, selectors.EVENT_READ, data=peer_device.handle_peer_messages)
 
     def _remove_addr_after_delay(self, ip): 
         """

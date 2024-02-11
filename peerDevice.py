@@ -40,15 +40,20 @@ class PeerDevice:
         handle peer public key 
         """
         self._peer_public_key = Keys.deserialize_public_key(PublicKeyMessage.unpack_message(message)) 
-        if not self._key_shared: self.send_key()
+        logging.debug(f"peer:{self.ip}: got public key")
+        if not self._handshake_done: self.send_key()
 
     def _send_message(self, message):
+        """
+        send messages to peer
+        """
         self.peer_socket.sendall(message)
 
     def send_key(self):
         """
         send device public key 
         """
+        logging.debug(f"peer:{self.ip}: sending public key")
         self._send_message(PublicKeyMessage.pack_message(self.key_pair.serialize_public_key()))
         self._handshake_done = True
         
