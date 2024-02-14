@@ -50,14 +50,11 @@ class PeerDevice:
                     self._handle_public_key_message(self._buffer)
             else:
                 # handle messages with encryption
-                print(length)
-                print(len(self._buffer))
-                print(len(self._buffer[4:length]))
                 encrypted_message = unpack(f"!{length - 4}s", self._buffer[4:length])[0]
                 message = self._get_decrypted_message(encrypted_message)
                 id = self._get_message_id(message)
                 if (id == 1):
-                    self._handle_info_message(length - 4, message)
+                    self._handle_info_message(message)
 
             self._update_buffer(length)
                     
@@ -65,9 +62,7 @@ class PeerDevice:
         """
         return device id and name
         """
-        print(length)
-        print(message)
-        device_id, device_name = DeviceInfoMessage.unpack_message(length, message)
+        device_id, device_name = DeviceInfoMessage.unpack_message(message)
         logging.debug(f"peerDevice: {device_id}: {device_name}")
         self.device_id = device_id
         self.device_name = device_name 

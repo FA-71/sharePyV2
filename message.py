@@ -65,12 +65,11 @@ class DeviceInfoMessage(Message):
         return pack(f"!B32s{len(DEVICE_NAME)}s", cls.id, DEVICE_ID, DEVICE_NAME.encode())
 
     @classmethod 
-    def unpack_message(cls, length, data):
+    def unpack_message(cls, data):
         """
         return device id, name
         """
         length = len(data)
-        print(unpack(f"!32s{length - 33}s", data[1:]))
         device_id, device_name = unpack(f"!32s{length - 33}s", data[1:])
         return device_id, device_name.decode() 
 
