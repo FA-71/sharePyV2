@@ -69,7 +69,9 @@ class DeviceInfoMessage(Message):
         """
         return device id, name
         """
-        device_id, device_name = unpack(f"!32s{length - 33}", data[1:])[0]
+        length = len(data)
+        print(unpack(f"!32s{length - 33}s", data[1:]))
+        device_id, device_name = unpack(f"!32s{length - 33}s", data[1:])
         return device_id, device_name.decode() 
 
 # class EncryptedMessage():

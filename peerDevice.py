@@ -48,20 +48,27 @@ class PeerDevice:
                 id = self._get_message_id(self._buffer[4:])
                 if id == 0:
                     self._handle_public_key_message(self._buffer)
-                    self._update_buffer(length)
             else:
                 # handle messages with encryption
-                encrypted_message = unpack(f"!{length}s", self._buffer[4:length])
+                print(length)
+                print(len(self._buffer))
+                print(len(self._buffer[4:length]))
+                encrypted_message = unpack(f"!{length - 4}s", self._buffer[4:length])[0]
                 message = self._get_decrypted_message(encrypted_message)
                 id = self._get_message_id(message)
                 if (id == 1):
-                    self._handle_info_message(length, message)
+                    self._handle_info_message(length - 4, message)
+
+            self._update_buffer(length)
                     
     def _handle_info_message(self, length, message):
         """
         return device id and name
         """
+        print(length)
+        print(message)
         device_id, device_name = DeviceInfoMessage.unpack_message(length, message)
+        logging.debug(f"peerDevice: {device_id}: {device_name}")
         self.device_id = device_id
         self.device_name = device_name 
 
@@ -76,7 +83,7 @@ class PeerDevice:
         encrypt message with peer public key and pack it with length of the message
         """
         encrypted_messsage = Keys.get_ciphertext(message, self._peer_public_key)
-        return pack(f"!I{len(encrypted_messsage)}s", len(encrypted_messsage), encrypted_messsage) 
+        return pack(f"!I{len(encrypted_messsage)}s", len(encrypted_messsage) + 4, encrypted_messsage) 
 
     def _get_decrypted_message(self, ciphertext):
         """
@@ -94,7 +101,9 @@ class PeerDevice:
         """
         return message length, id
         """
-        return unpack("!B", data[0])[0]
+        # print(data[0])
+        # return unpack("!B", data[0])[0]
+        return data[0]
 
     def _get_message_length(self):
         """
@@ -134,5 +143,5 @@ class PeerDevice:
         """
         logging.debug(f"peer:{self.ip}: sending public key")
         self._send_message(PublicKeyMessage.pack_message(self.key_pair.serialize_public_key()))
-        self._handshake_done = True
+        self._key_sent = True
         
