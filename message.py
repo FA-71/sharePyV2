@@ -73,6 +73,32 @@ class DeviceInfoMessage(Message):
         device_id, device_name = unpack(f"!32s{length - 33}s", data[1:])
         return device_id, device_name.decode() 
 
+
+class PairRequest(Message): 
+    id: int = 2
+
+    @classmethod
+    def pack_message(cls):
+        return pack("!B", cls.id)
+    
+
+class PairResponse(Message):
+    id: int = 3
+
+    @classmethod
+    def pack_message(cls, response):
+        if (response): 
+            response = 1
+        else: 
+            response = 0
+        return pack("!BI", cls.id, response)
+    
+    @classmethod
+    def unpack_message(cls, message):
+        response = unpack("!I", message[1:])
+        if response: return True
+        return False
+    
 # class EncryptedMessage():
 #     @classmethod 
 #     def pack_message(message):
@@ -84,7 +110,11 @@ class DeviceInfoMessage(Message):
         
 
 MESSAGE_TYPE = {
-    0 : PublicKeyMessage 
+    0 : PublicKeyMessage, 
+    1 : DeviceInfoMessage,
+    2 : PairRequest, 
+    # 3 : PairResponse, 
+    # 4 : Connected
 }
 
 

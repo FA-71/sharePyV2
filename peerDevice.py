@@ -5,9 +5,11 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 from keys import Keys
 from message import MESSAGE_TYPE
-from message import PublicKeyMessage
-from message import DeviceInfoMessage
 from config import DEVICE_ID
+from message import DeviceInfoMessage
+from message import PublicKeyMessage
+from message import PairRequest
+from message import PairResponse
 
 
 class PeerDevice: 
@@ -15,9 +17,12 @@ class PeerDevice:
             self, 
             ip, 
             key_pair: Keys, 
+            check_paired_before, 
+            add_paired_device,
             peer_socket = None, 
-            paired = False
+            paired = False, 
             ):
+        self.connected = False
         self.ip = ip
         self._handshake_done = False
         self.paired = paired 
@@ -27,6 +32,9 @@ class PeerDevice:
         self._buffer = b''
         self._key_sent = False
         self._info_sent = False
+        self.check_paired_before = check_paired_before
+        self.add_paired_device = add_paired_device
+        self._has_pair_permission = False
     
     def handle_peer_messages(self, peer_socket: socket.socket):
         """
@@ -45,20 +53,60 @@ class PeerDevice:
 
             # if peer public key hasn't received, doesn't use decryption
             if not self._key_sent or self._peer_public_key == None:
-                id = self._get_message_id(self._buffer[4:])
-                if id == 0:
-                    self._handle_public_key_message(self._buffer)
+                try: 
+                    id = self._get_message_id(self._buffer[4:])
+                    if id == 0:
+                        self._handle_public_key_message(self._buffer)
+                except Exception as e: 
+                    logging.error(f"peerDevice: {self.ip}: invalid message")
+
+                self._update_buffer(len(self._buffer))
+                #TODO: send invalid message to the peer 
+                return
             else:
                 # handle messages with encryption
                 encrypted_message = unpack(f"!{length - 4}s", self._buffer[4:length])[0]
                 message = self._get_decrypted_message(encrypted_message)
                 id = self._get_message_id(message)
+
                 if (id == 1):
                     self._handle_info_message(message)
+                elif (id == 2):
+                    self._handle_pair_request()
+                elif (id == 3): 
+                    self._handle_pair_response(message)
 
             self._update_buffer(length)
+
+    def _handle_pair_response(self, message):
+        """
+        handle pair response 
+        """
+        response = PairResponse.unpack_message(message)
+        if response and self._has_pair_permission:
+            self.paired = True
+            self.connected = True
+            self.add_paired_device(self.device_id, self.device_name)
+            message = PairResponse.pack_message()
+            self._send_encrypted_message(message)
+            logging.debug(f"{self.device_name}: sending pair response")
+            logging.debug(f"{self.device_name}: paired and connected ")
+        else: 
+            self._has_pair_permission = False
+            logging.debug(f"{self.device_name}: failed to pair ")
+
+    def _handle_pair_request(self): 
+        """
+        handle pair request and if user wants pairs and send pair response 
+        """
+        if (input("Do you wanna pair?: ") == "yes"):
+            self._has_pair_permission = True
+            message = PairResponse.pack_message()
+            self._send_encrypted_message(message)
+            logging.debug(f"{self.device_name}: sending pair response")
+        
                     
-    def _handle_info_message(self, length, message):
+    def _handle_info_message(self, message):
         """
         return device id and name
         """
@@ -71,7 +119,15 @@ class PeerDevice:
             self._send_device_info()
 
         #TODO: check if device info is received to the peer 
+        logging.debug(f"{self.device_name}: handshake done ")
         self._handshake_done = True
+
+        if (self.check_paired_before(device_id)):
+            #TODO: send a connnected message
+            logging.debug(f"{self.device_name}: - connected")
+            self.paried = True
+            self._has_pair_permission = True
+            self.connected = True
 
     def _get_packed_ciphertext(self, message):
         """
@@ -96,8 +152,6 @@ class PeerDevice:
         """
         return message length, id
         """
-        # print(data[0])
-        # return unpack("!B", data[0])[0]
         return data[0]
 
     def _get_message_length(self):
@@ -122,9 +176,16 @@ class PeerDevice:
         send device info to the peer 
         """
         device_info_message = DeviceInfoMessage().pack_message()
-        message = self._get_packed_ciphertext(device_info_message)
-        self._send_message(message)
+        self._send_encrypted_message(device_info_message) 
         self._info_sent = True
+    
+    def _send_encrypted_message(self, message):
+        """
+        encrypt and send the message to the peer 
+        """
+        encrypted_message = self._get_packed_ciphertext(message)
+        self._send_message(encrypted_message)
+
 
     def _send_message(self, data):
         """

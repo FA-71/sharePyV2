@@ -3,6 +3,7 @@ import time
 import socket
 import threading
 import selectors
+from pathlib import Path
 from typing import Set 
 
 from constants import COMMON_PORT
@@ -13,11 +14,14 @@ from message import PublicKeyMessage
 
 
 class PeerDeviceManager:
+    peerDevice_data_path = Path(__file__).parent / "paired-devices"
+
     def __init__(self, key_pair: Keys):
         self.key_pair = key_pair
         self.peer_ip_set: Set[str] = set()
         self.peers: Set[PeerDevice] = set()
         self._sel: selectors.DefaultSelector | None = None
+        self.paired_list = self._get_paired_list()
 
     def peer_manager_listener(self):
         """
@@ -60,10 +64,7 @@ class PeerDeviceManager:
         peer_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         peer_socket.connect((ip, COMMON_PORT))
 
-        # make new PeerDevice
-        peer_device = PeerDevice(ip, self.key_pair, peer_socket)
-        peer_device.send_key()
-        self.peers.add(peer_device)
+        peer_device = self._get_new_peerDevice(ip, peer_socket)
 
         # register peer socket to selector
         self._sel.register(peer_socket, selectors.EVENT_READ, data=peer_device.handle_peer_messages)
@@ -91,10 +92,56 @@ class PeerDeviceManager:
         peer_sock, addr = sock.accept()
         peer_sock.setblocking(False)
 
-        # make a new PeerDevice
-        peer_device = PeerDevice(ip = addr[0], key_pair=self.key_pair, peer_socket=peer_sock)
-        self.peers.add(peer_device)
-        logging.debug(f"peerDeviceManager: made a connection with {addr}")
+        peer_device = self._get_new_peerDevice(addr[0], peer_sock)
 
         # register socket to selector 
         self._sel.register(peer_sock, selectors.EVENT_READ, data=peer_device.handle_peer_messages)
+
+    def _get_paired_list(self):
+        paired_list = []
+        if (self.peerDevice_data_path.resolve().exists()): 
+            with open(self.peerDevice_data_path.resolve(), "rb") as file:
+                line = file.readline()
+                while line: 
+                    line_data = line.split()
+                    device = {}
+                    device["id"] = line_data[0]
+                    device["name"] = line_data[0]
+                    paired_list.append(device)
+                    line_data = file.readline()
+
+        return paired_list
+
+    def check_paired_before(self, id):
+        for device in self.paired_list:
+            if device["id"] == id: return True
+        return False
+    
+    def _get_new_peerDevice(self, ip, peer_socket):
+        """
+        make a new peerDevice instance and add to the peers list 
+        """
+        peer_device = PeerDevice(
+            ip=ip, 
+            key_pair=self.key_pair, 
+            peer_socket=peer_socket, 
+            check_paired_before=self.check_paired_before,
+            add_paired_device=self.add_new_pairedDevice
+            )
+        self.peers.add(peer_device)
+        logging.debug(f"peerDeviceManager: made a connection with {ip}")
+
+        return peer_device
+
+    def add_new_pairedDevice(self, id, name):
+        """
+        add new pairedDevice to the list and store it
+        """
+        logging.debug("peerDeviceManager: added paired id to the file")
+        with open(self.peerDevice_data_path.resolve(), 'ab') as file: 
+            file.write(f"{id} {name}".encode())
+        
+        logging.debug("peerDeviceManager: added paired device to the list")
+        self.paired_list.append({"id" : id, "name": name})
+
+        
