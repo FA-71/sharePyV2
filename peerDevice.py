@@ -68,20 +68,22 @@ class PeerDevice:
                 message = self._get_decrypted_message(encrypted_message)
                 id = self._get_message_id(message)
 
-                if (id == 1):
+                if self.paired and self.connected:
+                    if id == 6:
+                        self._handle_file_info_message(message)
+                    elif id == 7: 
+                        self._handle_file_chunk_message(message)
+                    elif id == 8:
+                        self._handle_file_done_message()
+
+                elif id == 1:
                     self._handle_info_message(message)
-                elif (id == 2):
+                elif id == 2:
                     self._handle_pair_request()
-                elif (id == 3): 
+                elif id == 3: 
                     self._handle_pair_response(message)
-                elif (id == 4): 
+                elif id == 4: 
                     self._handle_pair_cancel()
-                elif (id == 6):
-                    self._handle_file_info_message(message)
-                elif (id == 7): 
-                    self._handle_file_chunk_message(message)
-                elif (id == 8):
-                    self._handle_file_done_message()
 
             self._update_buffer(length)
 
