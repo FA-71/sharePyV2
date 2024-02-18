@@ -107,10 +107,10 @@ class PeerDeviceManager:
                     line_data = line.split()
                     device = {}
                     device["id"] = line_data[0]
-                    device["name"] = line_data[0]
+                    device["name"] = line_data[1].decode()
                     paired_list.append(device)
                     line = file.readline()
-
+        logging.debug(f"peerDeviceManager: pairedlist - {paired_list}")
         return paired_list
 
     def check_paired_before(self, id):
@@ -140,7 +140,7 @@ class PeerDeviceManager:
         """
         logging.debug("peerDeviceManager: added paired id to the file")
         with open(self.peerDevice_data_path.resolve(), 'ab') as file: 
-            file.write(f"{id} {name}\n".encode())
+            file.write(f"{id.decode()} {name}\n".encode())
         
         logging.debug("peerDeviceManager: added paired device to the list")
         self.paired_list.append({"id" : id, "name": name})

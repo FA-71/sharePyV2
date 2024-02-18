@@ -6,11 +6,8 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from keys import Keys
 from message import MESSAGE_TYPE
 from config import DEVICE_ID
-from message import DeviceInfoMessage
-from message import PublicKeyMessage
-from message import PairRequest
-from message import PairResponse
-from message import PairCancel
+from file import File 
+from message import *
 
 
 class PeerDevice: 
@@ -36,6 +33,7 @@ class PeerDevice:
         self.check_paired_before = check_paired_before
         self.add_paired_device = add_paired_device
         self._has_pair_permission = False
+        self._current_file = None
     
     def handle_peer_messages(self, peer_socket: socket.socket):
         """
@@ -78,8 +76,55 @@ class PeerDevice:
                     self._handle_pair_response(message)
                 elif (id == 4): 
                     self._handle_pair_cancel()
+                elif (id == 6):
+                    self._handle_file_info_message(message)
+                elif (id == 7): 
+                    self._handle_file_chunk_message(message)
+                elif (id == 8):
+                    self._handle_file_done_message()
 
             self._update_buffer(length)
+
+    def _handle_file_done_message(self):
+        """
+        check hash and close file 
+        """
+        if (self._current_file.check_hash()): 
+            logging.info(f"{self._current_file}: file received")
+        self._current_file.close()
+
+    def _handle_file_chunk_message(self, message):
+        """
+        unpack message and write to the file 
+        """
+        index, chunk = FileChunkMessage.unpack_message(message)
+        self._current_file.write_chunk(index, chunk)
+
+    def _handle_file_info_message(self, message):
+        """
+        unpack message and make a file object
+        """
+        path, hash = FileInfoMessage.unpack_message(message)
+        self._current_file = File(path)
+        self.hash = hash 
+        self._current_file.open_to_write()
+
+    def send_file(self, path: str):
+        """
+        send file to the peer
+        """
+        file = File(path)
+        file.read_file()
+
+        # send the file info 
+        file_info_message = FileInfoMessage.pack_message(file.path, file.hash) 
+        self._send_encrypted_message(file_info_message)
+
+        logging.info(f"{file._path}: sending the file")
+        for i in range(0, file.no_of_chunks):
+            chunk = file.get_chunk(i)
+            file_chunk_message = FileChunkMessage.pack_message(i, chunk)
+
 
     def _handle_pair_response(self, message):
         """

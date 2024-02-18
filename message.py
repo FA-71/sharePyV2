@@ -24,11 +24,11 @@ class BroadcastMessage:
 
 class Message(ABC):
     @abstractmethod
-    def pack_message(self):
+    def pack_message(cls):
         pass
 
     @abstractmethod
-    def unpack_message(self):
+    def unpack_message(cls):
         pass
 
 
@@ -95,7 +95,7 @@ class PairResponse(Message):
     
     @classmethod
     def unpack_message(cls, message):
-        response = unpack("!I", message[1:])
+        response = unpack("!I", message[1:])[0]
         if response: return True
         return False
     
@@ -105,15 +105,39 @@ class PairCancel(Message):
     @classmethod 
     def pack_message(cls):
         return pack("!B", cls.id)
-# class EncryptedMessage():
-#     @classmethod 
-#     def pack_message(message):
-#         return pack(f"!I{len(message)}s", len(message), message)
-    
-#     @classmethod
-#     def unpack_message(message):
-#         pass 
-        
+
+class FileInfoMessage(Message):
+    id: int = 6
+
+    @classmethod
+    def pack_message(cls, path: str, hash: bytes):
+        return pack(f"!B{len(path)}s32s", cls.id, path.encode() , hash) 
+
+    @classmethod
+    def unpack_message(cls, message):
+        """
+        returns file path, hash
+        """
+        return unpack(f"!{len(message - 33)}s32s", message[1:])
+
+class FileChunkMessage(Message): 
+    id:int = 7
+
+    @classmethod
+    def pack_message(cls, index: int, chunk: bytes):
+        return pack(f"!BI{len(chunk)}s", cls.id, index, chunk)
+
+    @classmethod
+    def unpack_message(cls, message):
+        return unpack(f"!I{len(message) - 5}s", message[1:])
+
+
+class FileDoneMessage(Message):
+    id: int = 8
+
+    @classmethod
+    def pack_message(cls):
+        return pack(f"!B", cls.id)
 
 MESSAGE_TYPE = {
     0 : PublicKeyMessage, 
@@ -121,7 +145,10 @@ MESSAGE_TYPE = {
     2 : PairRequest, 
     3 : PairResponse, 
     4 : PairCancel,
-    # 5 : Connected
+    # 5 : Connected,
+    6 : FileInfoMessage, 
+    7 : FileChunkMessage,
+    8 : FileDoneMessage,
 }
 
 
