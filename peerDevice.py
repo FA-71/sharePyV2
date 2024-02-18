@@ -10,6 +10,7 @@ from message import DeviceInfoMessage
 from message import PublicKeyMessage
 from message import PairRequest
 from message import PairResponse
+from message import PairCancel
 
 
 class PeerDevice: 
@@ -75,6 +76,8 @@ class PeerDevice:
                     self._handle_pair_request()
                 elif (id == 3): 
                     self._handle_pair_response(message)
+                elif (id == 4): 
+                    self._handle_pair_cancel()
 
             self._update_buffer(length)
 
@@ -83,17 +86,34 @@ class PeerDevice:
         handle pair response 
         """
         response = PairResponse.unpack_message(message)
+
+        # if paired doesn't do anything 
+        if response and self.paired: 
+            return 
+
+        #TODO: if response is 0 cancel the pair
         if response and self._has_pair_permission:
             self.paired = True
             self.connected = True
             self.add_paired_device(self.device_id, self.device_name)
-            message = PairResponse.pack_message()
+
+            message = PairResponse.pack_message(True)
             self._send_encrypted_message(message)
+
             logging.debug(f"{self.device_name}: sending pair response")
-            logging.debug(f"{self.device_name}: paired and connected ")
+            logging.info(f"{self.device_name}: paired and connected ")
         else: 
             self._has_pair_permission = False
-            logging.debug(f"{self.device_name}: failed to pair ")
+            logging.info(f"{self.device_name}: failed to pair ")
+
+    def _handle_pair_cancel(self):
+        """
+        handle the pair cancel message
+        """
+        self.paired = False
+        self._has_pair_permission = False
+        self.connected = False
+        logging.info(f"{self.device_name}: pair canceled")
 
     def _handle_pair_request(self): 
         """
@@ -101,10 +121,43 @@ class PeerDevice:
         """
         if (input("Do you wanna pair?: ") == "yes"):
             self._has_pair_permission = True
-            message = PairResponse.pack_message()
+            message = PairResponse.pack_message(True)
             self._send_encrypted_message(message)
             logging.debug(f"{self.device_name}: sending pair response")
         
+    def _send_pair_cancel(self):
+        """
+        send encrypted pair cancel message 
+        """
+        message = PairCancel.pack_message()
+        self._send_encrypted_message(message)
+        
+    def pair(self):
+        """
+        do the pairing process
+        """
+        self._send_pair_request()
+
+    def unpair(self):
+        """
+        do the unpairing process
+        """
+        self.paired = False
+        self._has_pair_permission = False
+        self.connected = False
+        self._send_pair_cancel()
+        logging.info(f"{self.device_name}: pair canceled")
+
+    def _send_pair_request(self):
+        """
+        send the pair request 
+        """
+        if (input("Do you wanna pair?: ") == "yes"):
+            self._has_pair_permission = True
+            message = PairRequest.pack_message()
+            self._send_encrypted_message(message)
+            logging.debug(f"{self.device_name}: sending pair request")
+            logging.info(f"{self.device_name}: pairing")
                     
     def _handle_info_message(self, message):
         """
@@ -124,10 +177,11 @@ class PeerDevice:
 
         if (self.check_paired_before(device_id)):
             #TODO: send a connnected message
-            logging.debug(f"{self.device_name}: - connected")
+            logging.info(f"{self.device_name}: - connected")
             self.paried = True
             self._has_pair_permission = True
             self.connected = True
+
 
     def _get_packed_ciphertext(self, message):
         """

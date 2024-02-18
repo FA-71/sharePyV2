@@ -99,6 +99,12 @@ class PairResponse(Message):
         if response: return True
         return False
     
+class PairCancel(Message):
+    id: int = 4
+
+    @classmethod 
+    def pack_message(cls):
+        return pack("!B", cls.id)
 # class EncryptedMessage():
 #     @classmethod 
 #     def pack_message(message):
@@ -113,8 +119,9 @@ MESSAGE_TYPE = {
     0 : PublicKeyMessage, 
     1 : DeviceInfoMessage,
     2 : PairRequest, 
-    # 3 : PairResponse, 
-    # 4 : Connected
+    3 : PairResponse, 
+    4 : PairCancel,
+    # 5 : Connected
 }
 
 

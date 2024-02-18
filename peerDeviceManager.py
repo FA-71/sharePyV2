@@ -68,6 +68,7 @@ class PeerDeviceManager:
 
         # register peer socket to selector
         self._sel.register(peer_socket, selectors.EVENT_READ, data=peer_device.handle_peer_messages)
+        peer_device.send_key()
 
     def _remove_addr_after_delay(self, ip): 
         """
@@ -96,6 +97,7 @@ class PeerDeviceManager:
 
         # register socket to selector 
         self._sel.register(peer_sock, selectors.EVENT_READ, data=peer_device.handle_peer_messages)
+
 
     def _get_paired_list(self):
         paired_list = []
@@ -139,7 +141,7 @@ class PeerDeviceManager:
         """
         logging.debug("peerDeviceManager: added paired id to the file")
         with open(self.peerDevice_data_path.resolve(), 'ab') as file: 
-            file.write(f"{id} {name}".encode())
+            file.write(f"{id} {name}\n".encode())
         
         logging.debug("peerDeviceManager: added paired device to the list")
         self.paired_list.append({"id" : id, "name": name})

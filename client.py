@@ -24,7 +24,7 @@ class Client:
 
             while True: 
                 if (input("send ping: ") == "y"):
-                    logging.debug(f"client: broadcasting")
+                    logging.info(f"client: broadcasting")
                     for i in range(5): 
                         s.sendto(BroadcastMessage.pack_message(), broadcast_addr)
                         time.sleep(2)

@@ -10,7 +10,7 @@ from utils import check_network
 from peerDeviceManager import PeerDeviceManager
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG, format="%(levelname)s - %(message)s")
 
 def main():
     network_status = check_network()
