@@ -10,7 +10,6 @@ from constants import COMMON_PORT
 from config import DEVICE_IP
 from keys import Keys
 from peerDevice import PeerDevice
-from message import PublicKeyMessage
 
 
 class PeerDeviceManager:
@@ -110,7 +109,7 @@ class PeerDeviceManager:
                     device["id"] = line_data[0]
                     device["name"] = line_data[0]
                     paired_list.append(device)
-                    line_data = file.readline()
+                    line = file.readline()
 
         return paired_list
 

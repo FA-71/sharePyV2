@@ -181,7 +181,7 @@ class PeerDevice:
             self.paried = True
             self._has_pair_permission = True
             self.connected = True
-
+            return 
 
     def _get_packed_ciphertext(self, message):
         """
