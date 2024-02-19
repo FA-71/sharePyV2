@@ -139,12 +139,31 @@ class FileDoneMessage(Message):
     def pack_message(cls):
         return pack(f"!B", cls.id)
 
+
+class AseKeyMessage(Message):
+    id: int = 5
+
+    @classmethod
+    def pack_message(cls, key):
+        """
+        return the packed message
+        """
+        return pack(f"!B{len(key)}s", cls.id, key)
+
+    @classmethod
+    def unpack_message(cls, message):
+        """
+        return the ase key
+        """
+        return unpack(f"!{len(message - 1)}s", message[1:])[0]
+
 MESSAGE_TYPE = {
     0 : PublicKeyMessage, 
     1 : DeviceInfoMessage,
     2 : PairRequest, 
     3 : PairResponse, 
     4 : PairCancel,
+    5 : AseKeyMessage,
     # 5 : Connected,
     6 : FileInfoMessage, 
     7 : FileChunkMessage,

@@ -5,7 +5,7 @@ import logging
 from server import Server
 from client import Client
 from constants import *
-from keys import Keys
+from keys import RsaKeys
 from utils import check_network
 from peerDeviceManager import PeerDeviceManager
 
@@ -19,7 +19,7 @@ def main():
         exit()
 
     # generate key pair
-    key_pair = Keys()
+    key_pair = RsaKeys()
 
     # start the peer manager
     peer_device_manager = PeerDeviceManager(key_pair) 

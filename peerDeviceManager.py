@@ -8,14 +8,14 @@ from typing import Set
 
 from constants import COMMON_PORT
 from config import DEVICE_IP
-from keys import Keys
+from keys import RsaKeys
 from peerDevice import PeerDevice
 
 
 class PeerDeviceManager:
     peerDevice_data_path = Path(__file__).parent / "paired-devices"
 
-    def __init__(self, key_pair: Keys):
+    def __init__(self, key_pair: RsaKeys):
         self.key_pair = key_pair
         self.peer_ip_set: Set[str] = set()
         self.peers: Set[PeerDevice] = set()
@@ -106,7 +106,7 @@ class PeerDeviceManager:
                 while line: 
                     line_data = line.split()
                     device = {}
-                    device["id"] = line_data[0]
+                    device["id"] = bytes.fromhex(line_data[0].decode())
                     device["name"] = line_data[1].decode()
                     paired_list.append(device)
                     line = file.readline()
@@ -134,13 +134,13 @@ class PeerDeviceManager:
 
         return peer_device
 
-    def add_new_pairedDevice(self, id, name):
+    def add_new_pairedDevice(self, id:bytes, name):
         """
         add new pairedDevice to the list and store it
         """
         logging.debug("peerDeviceManager: added paired id to the file")
         with open(self.peerDevice_data_path.resolve(), 'ab') as file: 
-            file.write(f"{id.decode()} {name}\n".encode())
+            file.write(f"{id.hex()} {name}\n".encode())
         
         logging.debug("peerDeviceManager: added paired device to the list")
         self.paired_list.append({"id" : id, "name": name})

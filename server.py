@@ -6,12 +6,12 @@ import logging
 from message import BroadcastMessage
 from config import DEVICE_IP
 from constants import *
-from keys import Keys
+from keys import RsaKeys
 from peerDeviceManager import PeerDeviceManager
 
 
 class Server: 
-    def __init__ (self, key_pair: Keys, peer_manager: PeerDeviceManager): 
+    def __init__ (self, key_pair: RsaKeys, peer_manager: PeerDeviceManager): 
         self.client_ip_list = set()
         self.key_pair = key_pair
         self.peerManager = peer_manager

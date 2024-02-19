@@ -6,11 +6,12 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes
+from cryptography.fernet import Fernet 
 
 from config import DEVICE_NAME
 
 
-class Keys:
+class RsaKeys:
     def __init__(self):
         self.private_key, self.public_key = self._generate_key_pair()
 
@@ -68,3 +69,21 @@ class Keys:
                 label=None
             )
         )  
+
+
+class AseKey:
+    def __init__(self, key = Fernet.generate_key()):
+        self.key = key 
+        self.cipher_suit = Fernet(self.key)
+
+    def encrypt_data(self, data):
+        """
+        return encrypted data using ase key 
+        """
+        return self.cipher_suit.encrypt(data)
+
+    def decrypt_data(self, data):
+        """
+        return decrypted bytes
+        """
+        return self.cipher_suit.decrypt(data)
